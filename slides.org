@@ -1,0 +1,279 @@
+#+TITLE:          Adversarial Neural Cryptography
+#+LATEX_HEADER:   \subtitle{Artificial Intelligence 2018/2019}
+#+LATEX_HEADER:   \institute{Università Ca' Foscari Venezia}
+#+AUTHOR:         Lorenzo Veronese, 852058
+#+DATE:           Tuesday 04/02/2020
+
+#+OPTIONS: toc:nil H:2
+#+startup: beamer
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation,aspectratio=169]
+#+BEAMER_THEME: metropolis
+#+LATEX_HEADER: \usepackage{tikz}
+#+LATEX_HEADER: \usepackage{lipsum}
+#+LATEX_HEADER: \usepackage{multicol}
+#+LATEX_HEADER: \usepackage[absolute,overlay]{textpos}
+#+LATEX_HEADER: \usepackage{enumitem}
+
+#+BEGIN_EXPORT latex
+\setitemize{label=\usebeamerfont*{itemize item}%
+  \usebeamercolor[fg]{itemize item}
+  \usebeamertemplate{itemize item}}
+%
+\usetikzlibrary{shapes.multipart}
+\usetikzlibrary{positioning}
+%
+\tikzset{
+  every overlay node/.style={
+   draw=black, fill=black!1, line width=1pt, anchor=north west
+  },
+}
+% Usage:
+% \tikzoverlay at (-1cm,-5cm) {content};
+% or
+% \tikzoverlay[text width=5cm] at (-1cm,-5cm) {content};
+\def\tikzoverlay{%
+   \tikz[baseline,overlay]\node[every overlay node]
+}%
+#+END_EXPORT
+
+
+* Learning Symmetric Encryption
+** System Organization
+#+BEGIN_EXPORT latex
+\begin{center}
+\includegraphics[width=0.9\textwidth]{img/symmetric_enc.png}
+\end{center}
+#+END_EXPORT
+
+** Objectives and Loss Function
+| *Eve*         |   | $\bullet$ Reconstruct P accurately (minimize $d(P_{eve}, P)$) |
+|               |   |                                                               |
+| *Alice / Bob* |   | $\bullet$ Communicate clearly (minimize $d(P_{bob}, P)$)      |
+|               |   | $\bullet$ Hide communication from Eve                         |
+
+- Differently from the common objectives of the adversaries of GANs, is not a goal
+  for Eve to distinguish $C$ from a random value drawn from some distribution.
+
+- We want to train Alice and Bob jointly to communicate succesfully 
+  and defeat Eve without a pre-specified notion of what cryptosystem they might discover
+  for this purpose.
+- We want Alice and Bob to defeat the best possible version of Eve, rather than a
+  fixed one.
+
+
+** Objectives and Loss Function
+#+BEGIN_EXPORT latex
+$$ A(\theta_{A}, P, K) \qquad B(\theta_{B}_{}, C, K) \qquad E(\theta_{E}, C) $$
+
+{\small
+\begin{multicols}{2}
+\begin{align*}
+L_E(\theta_{A}, \theta_{E}, P, K) = d(P, E(\theta_{E}, A(\theta_A, P, K))) \\
+L_E(\theta_{A}, \theta_{E}) = \mathbb{E}_{P,K}(d(P, E(\theta_{E}, A(\theta_A, P, K)))) \\
+O_{E} (\theta_A) = argmin_{\theta_{E}}(L_{E}(\theta_A, \theta_{E}))%
+\end{align*}\columnbreak
+
+\begin{align*}%
+L_B(\theta_{A}, \theta_{B}, P, K) = d(P, B(\theta_{B}, A(\theta_A, P, K), K)) \\
+L_B(\theta_{A}, \theta_{B}) = \mathbb{E}_{P,K}(d(P, B(\theta_{B}, A(\theta_A, P, K), K)))%
+\end{align*}\end{multicols}}%
+%
+\begin{align*}
+L_{AB}(\theta_A, \theta_B) =  L_B(\theta_{A}, \theta_{B}) - L_E(\theta_{A}, O_{E} (\theta_A)) \\
+(O_A, O_B) = argmin_{\theta_A, \theta_B}(L_{AB}(\theta_A, \theta_B))%
+\end{align*}
+#+END_EXPORT
+
+#+BEGIN_EXPORT latex
+%\only<2>{
+\tikzoverlay[text width=12cm] at (1cm,3.7cm) {
+  \begin{itemize}[topsep=0pt]
+  \item Alice and Bob want to minimize Bob’s reconstruction error and to
+maximize the reconstruction error of the "optimal Eve".
+  \end{itemize}
+};%}
+#+END_EXPORT
+
+** Objectives and Loss Function
+#+BEGIN_EXPORT latex
+\\ \
+#+END_EXPORT
+#+BEGIN_QUOTE
+"In practice [...] our training method cuts a few corners and 
+ incorporates a few improvements with respect to the high-level 
+ description of the objectives."
+#+END_QUOTE
+
+- "optimal Eve" is approximated by *alternating* Eve and Alice and Bob training.
+- In the training of Alice and Bob, we *do not* maximize Eve’s error. 
+  - If we did, and made Eve completely wrong, then Eve could be completely 
+    right in the next iteration by simply flipping all output bits! 
+  - Generally, the goal is to minimize the mutual information between 
+    Eve’s guess and the real plaintext.
+    - Make Eve produce answers indistinguishable from a random guess.
+#    - Tweak the loss function so that it does not give much importance to eve being "lucky".
+
+$$ L_{AB} = \text{Bob L1 error} + \frac{(N/2 - \text{Eve L1 error})^2}{(N/2)^2} $$
+
+#+BEGIN_EXPORT latex
+\only<2>{
+\tikzoverlay[text width=5.6cm] at (6cm, 2.7cm) {
+  This is minimized when half of the bits are wrong and half are right
+};}
+#+END_EXPORT
+
+** Network Architecture
+#+BEGIN_EXPORT latex
+% \centering
+\resizebox{0.55\textwidth}{!}{%
+%
+\begin{tikzpicture}[
+    box/.style={rectangle split, draw, minimum width=.5cm}
+]
+\node[left of=p] (tp) {$P$};
+\node[below of=tp, below=70pt] {$K$};
+\node[above of=p, above=25pt, align=center, text width=1.5cm] (ti) {input\\$2 \times N$};
+\node[right of=ti, right=-15pt, align=center, text width=1.5cm] (tfc) {FC\\$2 \times N$};
+\node[below right of=tfc, below right=-0pt and -10pt, align=center, text width=1.5cm] (tc1) {Conv1D\\$4, 1, 2$};
+\node[right of=tc1, right=-10pt, align=center, text width=1.5cm] (tc2) {Conv1D\\$2, 2, 4$};
+\node[right of=tc2, right=-10pt, align=center, text width=1.5cm] (tc3) {Conv1D\\$1, 4, 4$};
+\node[right of=tc3, right=-10pt, align=center, text width=1.5cm] (tc4) {Conv1D\\$1, 4, 1$};
+\node[below right of=tc4, below right=-18pt and 0pt, align=center, text width=1.5cm] (to) {out\\$N$};
+\node[rectangle split part fill={white},  rectangle split parts=8, box] (p) at (0,0) {};
+\node[rectangle split part fill={white},  rectangle split parts=8, box, below of=p, below=28pt]  (k) {};
+\node[rectangle split part fill={white},  rectangle split parts=16, box, right of=p] (h) at (0.4,-1.9) {};
+\node[rectangle, fill={white}, draw, minimum width=.6cm, minimum height=4.5cm, right of=h]  (c1) at (1.8,-1.9) {};
+\node[rectangle, fill={white}, draw, minimum width=.6cm, minimum height=4.5cm, right of=h]  (c2) at (3.3,-1.9) {};
+\node[rectangle, fill={white}, draw, minimum width=.6cm, minimum height=4.5cm, right of=h]  (c3) at (4.8,-1.9) {};
+\node[rectangle, fill={white}, draw, minimum width=.6cm, minimum height=4.5cm, right of=h]  (c4) at (6.3,-1.9) {};
+\node[rectangle, fill={white}, rectangle split parts=8, box, right of=h]  (o) at (7.8,-1.9) {};
+\end{tikzpicture}%
+}
+\tikzoverlay[text width=7cm, draw=none ] at (-0cm, 5.5cm) {
+  \begin{itemize}
+  \item \textit{"mix \& transform"} architecture
+  \item Architecture that is \textit{succificient} to learn functions such as XOR
+\end{itemize}
+\begin{itemize}
+  \item FC layer enables mixing between $P$ and $K$
+  \item Conv layers lean functions on groups of bits
+  \begin{itemize}\item \emph{learn} which bits to combine\end{itemize}
+  \end{itemize}
+};
+#+END_EXPORT
+
+** Experimental Evaluation
+| <l>              | <c>                    |
+| *$N_{bits}$*      | 16                     |
+| *Mini-batch Size* | 4096                   |
+| *Training Rounds* | 1 A/B for every 2 of E |
+
+- A training is successful if the networks cross an accuracy *threshold*
+  - *0.05 bits* of reconstruction error for Alice ad Bob
+  - *1-2 bits* more than random guessing for Eve
+- After successful training of the networks we reset Eve and
+  *train it from scratch* 5 times, recording the *best result* achieved by any Eve.
+  - If the retrained Eve obtains substantial advantage the solution is non-robust.
+
+** Effects of Different Loss Functions
+#+BEGIN_QUOTE
+"The best formulation [of the loss function] remains an open question"
+#+END_QUOTE
+
+- Define a *per-bit* loss function for Alice/Bob and Eve
+  #+BEGIN_EXPORT latex
+  \begin{align*}
+  L_{n} = \frac{1}{N}\sum_{i}^{N}{| P_{n}_i - P_i |} \\
+  L_{AB}  = L_B + (1 - L_E)^2
+  \end{align*}
+  #+END_EXPORT
+
+#+BEGIN_EXPORT latex
+\tikzoverlay[text width=2cm] at (10cm, 2.4cm) {
+  $0 \le L_n \le 2$
+};
+#+END_EXPORT
+#+BEGIN_EXPORT latex
+\tikzoverlay[text width=6.8cm] at (7.5cm, 0.8cm) {
+  minimized when half of the bits are wrong
+};
+#+END_EXPORT
+
+- In my experiments, the training is less unstable 
+  and the rate of convergence is improved.
+
+** Results
+#+BEGIN_EXPORT latex
+\only<1>{
+\begin{center}
+\includegraphics[width=0.92\textwidth]{img/reconstruction_error.png}
+\end{center}%
+}
+\only<2->{
+\begin{center}
+\includegraphics[width=0.92\textwidth]{img/best_eve.png}
+\end{center}%
+}
+\only<3>{
+\tikzoverlay[text width=8cm] at (6cm, 4.5cm) {
+  \begin{itemize}
+  \item The training was successful 3 out of 5 times
+  \item The most effective retrained version of Eve did not perform better 
+        that 6.4/16 bits wrong
+  \end{itemize}
+};%
+}
+#+END_EXPORT
+
+** Notes on Neural "Encryption"
+- The ciphertext is plaintext and key dependent
+- Changing a single bit of the key changes multiple outputs
+- Outputs are floating point numbers, so the learned algorithm is not XOR but some
+  mapping between the two spaces
+- We are training against an adversary that is strictly less complex that A/B.
+  Moreover A and B know which algorithm E is using.
+#  - In cryptography E should be a universal Turing Machine capable of
+#    using any polynomial-time algorithm.
+#  - This paper considers only a subset of the possible algorithms and gives
+#    A/B knowledge about the chosen algorithm.
+
+** Improving Eve (Eve++)
+
+#+BEGIN_QUOTE
+> What happens if you substantially increase the complexity of Eve [...]?
+There are several reasonable options for trying to make Eve stronger.\footnotemark
+#+END_QUOTE
+- *Eve++Layers* has two additional convolutional layers.
+- *Eve++RandomKey* has exactly the same shape and size as Bob, but 
+  receives random inputs instead of key material.
+
+
+#+BEGIN_EXPORT latex
+\footnotetext{\url{https://openreview.net/forum?id=S1HEBe_Jl&noteId=rkyzxEDQe}}
+#+END_EXPORT
+
+** Best Eve Performance
+# * Selective Protection
+* Asymmetric Encryption
+** System Organization
+#+BEGIN_EXPORT latex
+\begin{center}
+\includegraphics[width=0.9\textwidth]{img/asymmetric_enc.png}
+\end{center}
+#+END_EXPORT
+** Results
+# * Conclusions
+
+** References
+#+BEGIN_EXPORT latex
+\begin{thebibliography}{10}
+
+  \bibitem{abadi16}[AA16] Martín Abadi, David G. Andresen (Google Brain) 
+  \newblock Learning to Protect Communications with Adversarial Neural Cryptography
+  \newblock \url{https://arxiv.org/abs/1610.06918}
+
+%  \setbeamertemplate{bibliography item}[online]
+
+\end{thebibliography}
+#+END_EXPORT
