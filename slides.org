@@ -164,8 +164,9 @@ $$ L_{AB} = \text{Bob L1 error} + \frac{(N/2 - \text{Eve L1 error})^2}{(N/2)^2} 
 #+END_EXPORT
 
 ** Experimental Evaluation
-| *$N_{bits}$*      |                     16 |
-| *Mini-batch Size* |                   4096 |
+| <l>              | <c>                    |
+| *$N_{bits}$*      | 16                     |
+| *Mini-batch Size* | 4096                   |
 | *Training Rounds* | 1 A/B for every 2 of E |
 
 - A training is successful if the networks cross an accuracy *threshold*
