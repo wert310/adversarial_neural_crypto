@@ -150,7 +150,7 @@ $$ L_{AB} = \text{Bob L1 error} + \frac{(N/2 - \text{Eve L1 error})^2}{(N/2)^2} 
 \node[rectangle, fill={white}, rectangle split parts=8, box, right of=h]  (o) at (7.8,-1.9) {};
 \end{tikzpicture}%
 }
-\tikzoverlay[text width=7cm, draw=none ] at (-0cm, 5.5cm) {
+\tikzoverlay[text width=7cm, draw=none, fill=black!2 ] at (-0cm, 5.5cm) {
   \begin{itemize}
   \item \textit{"mix \& transform"} architecture
   \item Architecture that is \textit{succificient} to learn functions such as XOR
