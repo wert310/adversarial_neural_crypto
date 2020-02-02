@@ -14,6 +14,7 @@
 #+LATEX_HEADER: \usepackage{multicol}
 #+LATEX_HEADER: \usepackage[absolute,overlay]{textpos}
 #+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \usepackage{multirow}
 
 #+BEGIN_EXPORT latex
 \setitemize{label=\usebeamerfont*{itemize item}%
@@ -60,7 +61,6 @@
   for this purpose.
 - We want Alice and Bob to defeat the best possible version of Eve, rather than a
   fixed one.
-
 
 ** Objectives and Loss Function
 #+BEGIN_EXPORT latex
@@ -215,18 +215,59 @@ $$ L_{AB} = \text{Bob L1 error} + \frac{(N/2 - \text{Eve L1 error})^2}{(N/2)^2} 
 \includegraphics[width=0.92\textwidth]{img/best_eve.png}
 \end{center}%
 }
-\only<3>{
-\tikzoverlay[text width=8cm] at (6cm, 4.5cm) {
+
+\only<3->{
+\tikzoverlay[text width=10cm] at (3cm, 8.4cm) {
+\begin{table}[h!]
+\small
+\begin{tabular}{c|c}
+\hline
+\textbf{Alice/Bob Error (bits)} & \textbf{Best Eve Error (bits)} \\
+\hline
+0.0 & 6.6313 \\
+0.0 & 6.4697 \\
+0.0 & 6.6042 \\
+0.0 & 6.5017 \\
+0.0 & 6.2236 \\
+0.0 & 6.6181 \\
+0.0 & 6.625 \\
+0.2507 & 6.9565 \\
+0.0 & 6.6950 \\
+0.4936 & 7.0966 \\
+\hline
+\end{tabular}
+\caption{Alice/Bob and Best Eve reconstruction error}
+\end{table}
+}}
+
+\only<4>{
+\tikzoverlay[text width=8cm] at (5cm, 4.5cm) {
   \begin{itemize}
-  \item The training was successful 3 out of 5 times
+  \item The training was successful 8 out of 10 times
   \item The most effective retrained version of Eve did not perform better 
-        that 6.4/16 bits wrong
+        that 6.22/16 bits wrong
   \end{itemize}
 };%
 }
 #+END_EXPORT
 
 ** Notes on Neural "Encryption"
+#+BEGIN_EXPORT latex
+\only<1>{%
+\scriptsize
+\begin{align*}
+P = \begin{pmatrix}-1 \\  1 \\ -1 \\ -1 \\  1 \\ -1 \\ -1 \\ -1 \\  1 \\  1 \\ -1 \\ -1 \\ -1 \\  1 \\ 1 \\ -1\end{pmatrix}
+K = \begin{pmatrix}-1 \\  1 \\ -1 \\  1 \\ -1 \\  1 \\  1 \\  1 \\ -1 \\ -1 \\ -1 \\ -1 \\  1 \\  1 \\ -1 \\ -1\end{pmatrix}
+A(P ,K) = \begin{pmatrix}-0.2108 \\ -0.4068 \\  0.5591 \\  0.5356 \\ -0.5933 \\  0.5051 \\  0.5608 \\ -0.4685 \\ 0.5518 \\ -0.3741 \\  0.7064 \\ -0.6699 \\  0.5502 \\ -0.6388 \\  0.5095 \\  0.6827\end{pmatrix}
+B(A(P ,K) , K) = \begin{pmatrix}-0.9982 \\  0.9986 \\ -0.9991 \\ -0.9953 \\  0.9994 \\ -0.9992 \\ -0.9993 \\ -0.9986 \\ 0.9992 \\  0.9995 \\ -0.9961 \\ -0.9981 \\ -0.9992 \\  0.9990 \\  0.9981 \\ -0.9973\end{pmatrix}
+E(A(P , K)) = \begin{pmatrix}-0.9996 \\ -0.9998 \\ -0.9999 \\  0.9998 \\ -0.9998 \\ -0.9998 \\ -0.9998 \\  1.0000 \\ 0.9999 \\ -0.9998 \\  1.0000 \\ -0.9956 \\ -0.9999 \\ -0.9998 \\ -0.9998 \\  1.0000\end{pmatrix}
+\end{align*}%
+}
+#+END_EXPORT
+
+#+BEGIN_EXPORT latex
+\only<2>{
+#+END_EXPORT
 - The ciphertext is plaintext and key dependent
 - Changing a single bit of the key changes multiple outputs
 - Outputs are floating point numbers, so the learned algorithm is not XOR but some
@@ -237,6 +278,9 @@ $$ L_{AB} = \text{Bob L1 error} + \frac{(N/2 - \text{Eve L1 error})^2}{(N/2)^2} 
 #    using any polynomial-time algorithm.
 #  - This paper considers only a subset of the possible algorithms and gives
 #    A/B knowledge about the chosen algorithm.
+#+BEGIN_EXPORT latex
+}
+#+END_EXPORT
 
 ** Improving Eve (Eve++)
 
@@ -254,7 +298,50 @@ There are several reasonable options for trying to make Eve stronger.\footnotema
 #+END_EXPORT
 
 ** Best Eve Performance
-# * Selective Protection
+#+BEGIN_EXPORT latex
+\begin{table}[h!]
+\small
+\begin{tabular}{l l | c | c}
+\hline
+\textbf{Training} & \textbf{Validation} & \textbf{Alice/Bob Error (bits)} & \textbf{Best Eve Error (bits)} \\
+\hline
+\multirow{2}{*}{Eve} & \multirow{2}{*}{Eve++Layers} 
+ & 0.0 & 6.6704 \\
+&& 0.0 & 6.6086 \\
+\hline
+\multirow{2}{*}{Eve++Layers} & \multirow{2}{*}{Eve++Layers} 
+ & 0.0000 & 6.5488 \\
+&& 0.0002 & 6.7205 \\
+\hline
+\multirow{2}{*}{Eve} & \multirow{2}{*}{Eve++RandomKey} 
+ & 0.0000 & 6.5842 \\
+&& 0.4819 & 6.8489 \\
+\hline
+\multirow{2}{*}{Eve++RandomKey} & \multirow{2}{*}{Eve++RandomKey} 
+ & 0.0000 & 6.2371 \\
+&& 0.0000 & 6.4241 \\
+\hline
+\end{tabular}
+\caption{Alice/Bob and Best Eve loss and reconstruction error}
+\end{table}
+#+END_EXPORT
+
+#+BEGIN_EXPORT latex
+\only<2>{
+\tikzoverlay[text width=10cm] at (4cm,4cm) {
+  \begin{itemize}
+  \item The retrained more capable Eve is not more effective than
+        the old version, reaching a 6.23/16 best error.
+  \item It seems that there is no difference in training with
+        the improved Eve
+  \item The extra inputs given to Eve++Random did not give her 
+        substantial advantage
+  \end{itemize}
+};%
+}
+#+END_EXPORT
+
+
 * Asymmetric Encryption
 ** System Organization
 #+BEGIN_EXPORT latex
@@ -263,7 +350,45 @@ There are several reasonable options for trying to make Eve stronger.\footnotema
 \end{center}
 #+END_EXPORT
 ** Results
-# * Conclusions
+#+BEGIN_EXPORT latex
+\begin{center}
+\includegraphics[width=0.92\textwidth]{img/reconstruction_error_asymmetric.png}
+\end{center}
+#+END_EXPORT
+
+#+BEGIN_EXPORT latex
+\only<2->{
+\tikzoverlay[text width=10cm] at (3cm, 6cm) {
+\begin{table}[h!]
+\small
+\begin{tabular}{c|c}
+\hline
+\textbf{Alice/Bob Error (Bob rec.)} & \textbf{Best Eve Error (Eve rec.)} \\
+\hline
+ 0.129 (0.37 bits) & 0.089 (0.6 bits) \\
+ 0.173 (0.48 bits) & 0.021 (0.2 bits) \\
+\hline
+\end{tabular}
+\caption{Alice/Bob and Best Eve loss and reconstruction error}
+\end{table}
+}
+}
+#+END_EXPORT
+
+#+BEGIN_EXPORT latex
+\only<3>{
+\tikzoverlay[text width=9cm] at (4cm, 6.5cm) {
+  \begin{itemize}
+  \item The training is very slow and unstable
+  \item The retrained version of Eve can reconstruct the message
+        as effectively as Bob, even if Alice and Bob appeared to 
+        have learned to communicate secretly
+  \item The network structure might not be sufficient to learn the
+        math concepts such as modular arithmetic
+  \end{itemize}
+};%
+}
+#+END_EXPORT
 
 ** References
 #+BEGIN_EXPORT latex
@@ -277,3 +402,15 @@ There are several reasonable options for trying to make Eve stronger.\footnotema
 
 \end{thebibliography}
 #+END_EXPORT
+
+
+** COMMENT @@latex:@@
+   :PROPERTIES:
+   :BEAMER_opt: standout
+   :END:
+\LARGE
+Thank You!
+
+\Large
+Questions?
+
